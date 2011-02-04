@@ -42,7 +42,8 @@ VideoRenderer *createRenderer(
     static const int OMX_QCOM_COLOR_FormatYVU420SemiPlanar = 0x7FA30C00;
     static const int QOMX_COLOR_FormatYUV420PackedSemiPlanar64x32Tile2m8ka = 0x7FA30C03;
     static const int QOMX_INTERLACE_FLAG = 0x49283654;
-    static const int QOMX_3D_VIDEO_FLAG = 0x23784238;
+    static const int QOMX_3D_LEFT_RIGHT_VIDEO_FLAG = 0x23784238;
+    static const int QOMX_3D_TOP_BOTTOM_VIDEO_FLAG = 0x4678239b;
 
     if (!strncmp(componentName, "OMX.qcom.video.decoder.", 23))
     {
@@ -55,7 +56,8 @@ VideoRenderer *createRenderer(
             case (QOMX_COLOR_FormatYUV420PackedSemiPlanar64x32Tile2m8ka ^ QOMX_INTERLACE_FLAG):
             case (OMX_COLOR_FormatYUV420SemiPlanar ^ QOMX_INTERLACE_FLAG):
             /*3d variants*/
-            case (QOMX_COLOR_FormatYUV420PackedSemiPlanar64x32Tile2m8ka ^ QOMX_3D_VIDEO_FLAG):
+            case (QOMX_COLOR_FormatYUV420PackedSemiPlanar64x32Tile2m8ka ^ QOMX_3D_TOP_BOTTOM_VIDEO_FLAG):
+            case (QOMX_COLOR_FormatYUV420PackedSemiPlanar64x32Tile2m8ka ^ QOMX_3D_LEFT_RIGHT_VIDEO_FLAG):
             {
                 LOGV("StagefrightSurfaceOutput7x30::createRenderer");
                 QComHardwareOverlayRenderer *videoRenderer =  new QComHardwareOverlayRenderer(

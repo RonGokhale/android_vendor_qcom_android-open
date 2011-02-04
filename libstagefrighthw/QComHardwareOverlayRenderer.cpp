@@ -32,6 +32,10 @@
 
 namespace android {
 
+static const int QOMX_COLOR_FormatYUV420PackedSemiPlanar64x32Tile2m8ka = 0x7FA30C03;
+static const int QOMX_INTERLACE_FLAG = 0x49283654;
+static const int QOMX_3D_LEFT_RIGHT_VIDEO_FLAG = 0x23784238;
+static const int QOMX_3D_TOP_BOTTOM_VIDEO_FLAG = 0x4678239b;
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef struct PLATFORM_PRIVATE_ENTRY
@@ -87,10 +91,6 @@ QComHardwareOverlayRenderer::QComHardwareOverlayRenderer(
       mNumFpsSamples(0),
       mLastFrameTime(0) {
 
-    static const int QOMX_COLOR_FormatYUV420PackedSemiPlanar64x32Tile2m8ka = 0x7FA30C03;
-    static const int QOMX_INTERLACE_FLAG = 0x49283654;
-    static const int QOMX_3D_VIDEO_FLAG = 0x23784238;
-
     CHECK(mISurface.get() != NULL);
     CHECK(mDecodedWidth > 0);
     CHECK(mDecodedHeight > 0);
@@ -101,10 +101,6 @@ QComHardwareOverlayRenderer::QComHardwareOverlayRenderer(
 }
 
 bool QComHardwareOverlayRenderer::InitOverlayRenderer() {
-    static const int QOMX_COLOR_FormatYUV420PackedSemiPlanar64x32Tile2m8ka = 0x7FA30C03;
-    static const int QOMX_INTERLACE_FLAG = 0x49283654;
-    static const int QOMX_3D_VIDEO_FLAG = 0x23784238;
-
     sp<OverlayRef> ref = NULL;
 
     int32_t transform = ISurface::BufferHeap::ROT_0;
@@ -138,9 +134,14 @@ bool QComHardwareOverlayRenderer::InitOverlayRenderer() {
     else if (mColorFormat == (QOMX_COLOR_FormatYUV420PackedSemiPlanar64x32Tile2m8ka ^ QOMX_INTERLACE_FLAG)) {
         ref = mISurface->createOverlay(mDecodedWidth, mDecodedHeight, HAL_PIXEL_FORMAT_YCbCr_420_SP_TILED ^ HAL_PIXEL_FORMAT_INTERLACE, transform);
     }
-    else if (mColorFormat == (QOMX_COLOR_FormatYUV420PackedSemiPlanar64x32Tile2m8ka ^ QOMX_3D_VIDEO_FLAG)) {
+    else if (mColorFormat == (QOMX_COLOR_FormatYUV420PackedSemiPlanar64x32Tile2m8ka ^ QOMX_3D_LEFT_RIGHT_VIDEO_FLAG)) {
         ref = mISurface->createOverlay(mDecodedWidth, mDecodedHeight, 
                                        HAL_PIXEL_FORMAT_YCbCr_420_SP_TILED | HAL_3D_OUT_SIDE_BY_SIDE | HAL_3D_IN_SIDE_BY_SIDE_HALF_L_R,
+                                       transform);
+    }
+    else if (mColorFormat == (QOMX_COLOR_FormatYUV420PackedSemiPlanar64x32Tile2m8ka ^ QOMX_3D_TOP_BOTTOM_VIDEO_FLAG)) {
+        ref = mISurface->createOverlay(mDecodedWidth, mDecodedHeight,
+                                       HAL_PIXEL_FORMAT_YCbCr_420_SP_TILED | HAL_3D_OUT_TOP_BOTTOM | HAL_3D_IN_TOP_BOTTOM,
                                        transform);
     }
     else {
