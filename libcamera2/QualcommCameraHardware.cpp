@@ -5364,6 +5364,7 @@ status_t QualcommCameraHardware::setBrightness(const CameraParameters& params) {
     if (mBrightness !=  brightness) {
         LOGV(" new brightness value : %d ", brightness);
         mBrightness =  brightness;
+        mParameters.set("luma-adaptation", brightness);
     bool ret = native_set_parms(CAMERA_PARM_BRIGHTNESS, sizeof(mBrightness),
                                    (void *)&mBrightness);
         return ret ? NO_ERROR : UNKNOWN_ERROR;
