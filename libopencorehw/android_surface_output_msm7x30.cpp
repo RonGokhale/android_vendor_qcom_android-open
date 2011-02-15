@@ -61,6 +61,7 @@ OSCL_EXPORT_REF AndroidSurfaceOutputMsm7x30::AndroidSurfaceOutputMsm7x30() :
 OSCL_EXPORT_REF AndroidSurfaceOutputMsm7x30::~AndroidSurfaceOutputMsm7x30()
 {
     if(mStatistics) AverageFPSPrint();
+    mSurface->unregisterBuffers();
 }
 
 // create a frame buffer for software codecs
@@ -77,10 +78,9 @@ OSCL_EXPORT_REF bool AndroidSurfaceOutputMsm7x30::initCheck()
     // reset flags in case display format changes in the middle of a stream
     resetVideoParameterFlags();
 
-    //Use Overlay if target is 8660
     char value[PROPERTY_VALUE_MAX];
     property_get("ro.product.device",value,"0");
-    if(iVideoSubFormat == PVMF_MIME_YUV420_PACKEDSEMIPLANAR_TILE && strncmp(value,"msm8660",7)) {
+    if(iVideoSubFormat == PVMF_MIME_YUV420_PACKEDSEMIPLANAR_TILE) {
         mUseOverlay = false;
         initSurface();
     }
@@ -100,13 +100,17 @@ void AndroidSurfaceOutputMsm7x30::initSurface()
     int frameWidth = iVideoWidth;
     int frameHeight = iVideoHeight;
     int frameSize;
+    LOGV("displayWidth = %d displayHeight = %d framewidth = %d frameHeight = %d\n", displayWidth, displayHeight, frameWidth, frameHeight);
+
+    // Always set number of frames to hold to 2
+    mNumberOfFramesToHold = 2;
 
     // MSM72xx hardware codec uses semi-planar format
     if (iVideoSubFormat == PVMF_MIME_YUV420_PACKEDSEMIPLANAR_TILE) {
-        LOGV("using hardware codec");
+        LOGV("initSurface using hardware codec");
         mHardwareCodec = true;
     }else {
-        LOGV("using software codec");
+        LOGV("initSurface using software codec");
 
         // YUV420 frames are 1.5 bytes/pixel
         frameSize = (frameWidth * frameHeight * 3) / 2;
@@ -152,6 +156,7 @@ void AndroidSurfaceOutputMsm7x30::initOverlay()
     int orientation = ISurface::BufferHeap::ROT_0;
     int frameSize;
     //LOGE("iVideoSubFormat = %d \n", iVideoSubFormat);
+    LOGV("displayWidth = %d displayHeight = %d framewidth = %d frameHeight = %d\n", displayWidth, displayHeight, frameWidth, frameHeight);
 
     // MSM7x30 hardware codec uses semi-planar format
     if ((iVideoSubFormat == PVMF_MIME_YUV420_SEMIPLANAR_YVU) || (iVideoSubFormat == PVMF_MIME_YUV420_SEMIPLANAR) ||(iVideoSubFormat == PVMF_MIME_YUV420_PACKEDSEMIPLANAR_TILE)) {
@@ -298,11 +303,22 @@ PVMFStatus AndroidSurfaceOutputMsm7x30::writeFrameBuf(uint8* aData, uint32 aData
                 sp<MemoryHeapPmem> heap = new MemoryHeapPmem(master, heap_flags);
                 heap->slap();
 
+                uint32_t transform = ISurface::BufferHeap::ROT_0;
                 // register frame buffers with SurfaceFlinger
-                mBufferHeap = ISurface::BufferHeap(iVideoDisplayWidth, iVideoDisplayHeight,
-                        iVideoWidth, iVideoHeight, HAL_PIXEL_FORMAT_YCbCr_420_SP, heap);
+                if (iVideoSubFormat == PVMF_MIME_YUV420_PACKEDSEMIPLANAR_TILE) {
+                    mBufferHeap = ISurface::BufferHeap(iVideoDisplayWidth, iVideoDisplayHeight,
+                        iVideoWidth, iVideoHeight, HAL_PIXEL_FORMAT_YCbCr_420_SP_TILED, transform, 0, heap);
+                }
+                else {
+                    mBufferHeap = ISurface::BufferHeap(iVideoDisplayWidth, iVideoDisplayHeight,
+                        iVideoWidth, iVideoHeight, HAL_PIXEL_FORMAT_YCbCr_420_SP, transform, 0, heap);
+                }
                 master.clear();
-                mSurface->registerBuffers(mBufferHeap);
+                status_t err = mSurface->registerBuffers(mBufferHeap);
+                if (err != OK) {
+                    LOGE("Register Buffer Failed");
+                    return err;
+                }
             }
 
             // get pmem offset and post to SurfaceFlinger
