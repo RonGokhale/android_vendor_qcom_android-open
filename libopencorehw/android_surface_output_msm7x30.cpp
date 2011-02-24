@@ -61,7 +61,10 @@ OSCL_EXPORT_REF AndroidSurfaceOutputMsm7x30::AndroidSurfaceOutputMsm7x30() :
 OSCL_EXPORT_REF AndroidSurfaceOutputMsm7x30::~AndroidSurfaceOutputMsm7x30()
 {
     if(mStatistics) AverageFPSPrint();
-    mSurface->unregisterBuffers();
+    if (!mUseOverlay) {
+        LOGV("Surface flinger - Unregister Buffers");
+        mSurface->unregisterBuffers();
+    }
 }
 
 // create a frame buffer for software codecs
