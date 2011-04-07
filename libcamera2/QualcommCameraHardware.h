@@ -284,6 +284,16 @@ private:
     friend void *video_thread(void *user);
     void runVideoThread(void *data);
 
+    // smooth zoom
+    int mTargetSmoothZoom;
+    bool mSmoothzoomThreadExit;
+    bool mSmoothzoomThreadRunning;
+    Mutex mSmoothzoomThreadWaitLock;
+    Mutex mSmoothzoomThreadLock;
+    Condition mSmoothzoomThreadWait;
+    friend void *smoothzoom_thread(void *user);
+    void runSmoothzoomThread(void* data);
+
     // For Histogram
     int mStatsOn;
     int mCurrent;
@@ -407,6 +417,7 @@ private:
     pthread_t mPreviewThread;
     pthread_t mSnapshotThread;
     pthread_t mDeviceOpenThread;
+    pthread_t mSmoothzoomThread;
 
     common_crop_t mCrop;
 
