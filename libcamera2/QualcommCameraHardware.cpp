@@ -4627,8 +4627,8 @@ void QualcommCameraHardware::notifyShutter(common_crop_t *crop, bool mPlayShutte
             // Cropped
             if (mCurrentTarget == TARGET_MSM7627) {
                 jpegPadding = 8;
-                size.width = (crop->in1_w + jpegPadding) & ~1;
-                size.height = (crop->in1_h + jpegPadding) & ~1;
+                size.width = (crop->in1_w) & ~1;
+                size.height = (crop->in1_h) & ~1;
             } else {
                 size.width = (crop->in2_w + jpegPadding) & ~1;
                 size.height = (crop->in2_h + jpegPadding) & ~1;
@@ -4878,7 +4878,7 @@ bool QualcommCameraHardware::receiveRawPicture()
                     //Don't crop the mThumbnailHeap for 7630. As this heap
                     //is used for postview rather than for thumbnail. (thumbnail is generated from main image).
                     //overlay's setCrop will take of cropping while displaying postview.
-                    crop_yuv420(mCrop.out1_w, mCrop.out1_h, (mCrop.in1_w + jpegPadding), (mCrop.in1_h + jpegPadding),
+                    crop_yuv420(mCrop.out1_w, mCrop.out1_h, (mCrop.in1_w), (mCrop.in1_h),
                             (uint8_t *)mThumbnailHeap->mHeap->base(), mThumbnailHeap->mName);
                 }
             }
