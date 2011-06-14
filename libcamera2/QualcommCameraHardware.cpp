@@ -271,6 +271,10 @@ static camera_size_type jpeg_thumbnail_sizes[]  = {
     { 352, 288 },
     {0,0}
 };
+//supported preview fps ranges should be added to this array in the form (minFps,maxFps)
+static  android::FPSRange FpsRangesSupported[] = {{MINIMUM_FPS*1000,MAXIMUM_FPS*1000}};
+
+#define FPS_RANGES_SUPPORTED_COUNT (sizeof(FpsRangesSupported)/sizeof(FpsRangesSupported[0]))
 
 #define JPEG_THUMBNAIL_SIZE_COUNT (sizeof(jpeg_thumbnail_sizes)/sizeof(camera_size_type))
 static int attr_lookup(const str_map arr[], int len, const char *name)
@@ -730,6 +734,7 @@ static const str_map preview_formats[] = {
 static bool parameter_string_initialized = false;
 static String8 preview_size_values;
 static String8 picture_size_values;
+static String8 fps_ranges_supported_values;
 static String8 jpeg_thumbnail_size_values;
 static String8 antibanding_values;
 static String8 effect_values;
@@ -765,6 +770,21 @@ static String8 create_sizes_str(const camera_size_type *sizes, int len) {
     }
     for (int i = 1; i < len; i++) {
         sprintf(buffer, ",%dx%d", sizes[i].width, sizes[i].height);
+        str.append(buffer);
+    }
+    return str;
+}
+
+static String8 create_fps_str(const android:: FPSRange* fps, int len) {
+    String8 str;
+    char buffer[32];
+
+    if (len > 0) {
+        sprintf(buffer, "(%d,%d)", fps[0].minFPS, fps[0].maxFPS);
+        str.append(buffer);
+    }
+    for (int i = 1; i < len; i++) {
+        sprintf(buffer, ",(%d,%d)", fps[i].minFPS, fps[i].maxFPS);
         str.append(buffer);
     }
     return str;
@@ -1297,6 +1317,12 @@ void QualcommCameraHardware::initDefaultParameters()
         preview_size_values = create_sizes_str(
                 preview_sizes,  PREVIEW_SIZE_COUNT);
 
+        fps_ranges_supported_values = create_fps_str(
+            FpsRangesSupported,FPS_RANGES_SUPPORTED_COUNT );
+        mParameters.set(
+            CameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE,
+            fps_ranges_supported_values);
+        mParameters.setPreviewFpsRange(MINIMUM_FPS*1000,MAXIMUM_FPS*1000);
 
         flash_values = create_values_str(
             flash, sizeof(flash) / sizeof(str_map));
@@ -3836,6 +3862,7 @@ status_t QualcommCameraHardware::setParameters(const CameraParameters& params)
     if ((rc = setAntibanding(params)))  final_rc = rc;
     if ((rc = setExposureCompensation(params))) final_rc = rc;
     if ((rc = setBrightness(params)))   final_rc = rc;
+    if ((rc = setPreviewFpsRange(params)))  final_rc = rc;
 
     const char *str = params.get(CameraParameters::KEY_SCENE_MODE);
     int32_t value = attr_lookup(scenemode, sizeof(scenemode) / sizeof(str_map), str);
@@ -5193,6 +5220,21 @@ status_t QualcommCameraHardware::setPreviewSize(const CameraParameters& params)
         }
     }
     LOGE("Invalid preview size requested: %dx%d", width, height);
+    return BAD_VALUE;
+}
+status_t QualcommCameraHardware::setPreviewFpsRange(const CameraParameters& params)
+{
+    int minFps,maxFps;
+    params.getPreviewFpsRange(&minFps,&maxFps);
+    LOGE("FPS Range Values: %dx%d", minFps, maxFps);
+
+    for(size_t i=0;i<FPS_RANGES_SUPPORTED_COUNT;i++)
+    {
+        if(minFps==FpsRangesSupported[i].minFPS && maxFps == FpsRangesSupported[i].maxFPS){
+            mParameters.setPreviewFpsRange(minFps,maxFps);
+            return NO_ERROR;
+        }
+    }
     return BAD_VALUE;
 }
 
