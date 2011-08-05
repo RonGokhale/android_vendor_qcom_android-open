@@ -2951,8 +2951,7 @@ bool QualcommCameraHardware::initRaw(bool initJpegHeap)
          * So, mThumbnailHeap will be used for postview rather than
          * as thumbnail(Not changing the terminology to keep changes minimum).
          */
-        if((rawHeight >= previewHeight) &&
-           (mCurrentTarget != TARGET_MSM7627)) {
+        if(rawHeight >= previewHeight){
             mDimension.ui_thumbnail_height = previewHeight;
             mDimension.ui_thumbnail_width =
                         (previewHeight * rawWidth) / rawHeight;
